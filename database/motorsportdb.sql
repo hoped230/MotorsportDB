@@ -1,8 +1,5 @@
--- ============================================================
 --  MOTORSPORTS CHAMPIONSHIP MANAGEMENT & ANALYTICS SYSTEM
---  MySQL 8.0+ Schema — 35 Tables
---  Run: mysql -u root -p motorsport < motorsport_mysql.sql
--- ============================================================
+
 
 CREATE DATABASE IF NOT EXISTS motorsport
     CHARACTER SET utf8mb4
@@ -51,9 +48,7 @@ DROP TABLE IF EXISTS country;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
--- ============================================================
 -- SECTION 1 — CORE (10 tables)
--- ============================================================
 
 -- Table 1: country
 CREATE TABLE country (
@@ -197,9 +192,7 @@ CREATE TABLE race_result (
 CREATE INDEX idx_rr_race   ON race_result(race_id);
 CREATE INDEX idx_rr_driver ON race_result(driver_id);
 
--- ============================================================
 -- SECTION 2 — EXTENDED RACING (8 tables)
--- ============================================================
 
 -- Table 11: points_system
 CREATE TABLE points_system (
@@ -309,9 +302,7 @@ CREATE TABLE penalty (
     CONSTRAINT fk_pen_driver FOREIGN KEY (driver_id) REFERENCES driver(driver_id)
 ) ENGINE=InnoDB;
 
--- ============================================================
 -- SECTION 3 — TEAM & PERSONNEL (5 tables)
--- ============================================================
 
 -- Table 19: staff_role
 CREATE TABLE staff_role (
@@ -372,9 +363,7 @@ CREATE TABLE vehicle_spec (
     CONSTRAINT fk_vs_supplier FOREIGN KEY (supplier_id) REFERENCES engine_supplier(supplier_id)
 ) ENGINE=InnoDB;
 
--- ============================================================
 -- SECTION 4 — STANDINGS (2 tables)
--- ============================================================
 
 -- Table 24: driver_standing  [Snapshot per round — enables LAG() queries]
 CREATE TABLE driver_standing (
@@ -411,9 +400,7 @@ CREATE TABLE constructor_standing (
     CONSTRAINT fk_cs_team   FOREIGN KEY (team_id)   REFERENCES team(team_id)
 ) ENGINE=InnoDB;
 
--- ============================================================
 -- SECTION 5 — SPONSORS & AWARDS (4 tables)
--- ============================================================
 
 -- Table 26: sponsor
 CREATE TABLE sponsor (
@@ -459,9 +446,7 @@ CREATE TABLE race_award (
     CONSTRAINT fk_ra_award FOREIGN KEY (award_type_id) REFERENCES award_type(award_type_id)
 ) ENGINE=InnoDB;
 
--- ============================================================
 -- SECTION 6 — CONDITIONS & TIRES (3 tables)
--- ============================================================
 
 -- Table 30: weather
 CREATE TABLE weather (
@@ -503,9 +488,7 @@ CREATE TABLE tire_strategy (
     CONSTRAINT fk_tstr_compound FOREIGN KEY (compound_id) REFERENCES tire_compound(compound_id)
 ) ENGINE=InnoDB;
 
--- ============================================================
 -- SECTION 7 — SYSTEM / ADMIN (3 tables)
--- ============================================================
 
 -- Table 33: user_role
 CREATE TABLE user_role (
@@ -547,9 +530,7 @@ CREATE TABLE audit_log (
 CREATE INDEX idx_audit_time ON audit_log(action_time);
 CREATE INDEX idx_audit_user ON audit_log(user_id);
 
--- ============================================================
 -- VIEWS
--- ============================================================
 
 CREATE OR REPLACE VIEW v_driver_standings_latest AS
 SELECT
@@ -646,9 +627,7 @@ JOIN driver       d   ON rr.driver_id  = d.driver_id
 JOIN country      co  ON d.nationality_id = co.country_id
 LEFT JOIN team    t   ON rr.team_id    = t.team_id;
 
--- ============================================================
 -- TRIGGERS
--- ============================================================
 
 DELIMITER $$
 
@@ -752,9 +731,7 @@ END$$
 
 DELIMITER ;
 
--- ============================================================
 -- STORED PROCEDURES & FUNCTIONS
--- ============================================================
 
 DELIMITER $$
 
@@ -834,9 +811,7 @@ END$$
 
 DELIMITER ;
 
--- ============================================================
 -- SAMPLE DATA
--- ============================================================
 
 INSERT INTO country (country_name, country_code) VALUES
 ('United Kingdom', 'GBR'), ('Germany',      'DEU'), ('Netherlands', 'NLD'),
@@ -1090,9 +1065,7 @@ INSERT INTO team_staff (team_id, staff_id, season_id) VALUES
 INSERT INTO user_role (role_name, can_insert, can_update, can_delete) VALUES
 ('Admin',  1,1,1),('Analyst',1,1,0),('Viewer',0,0,0);
 
--- ============================================================
 -- COMPLEX QUERIES (commented — run individually as needed)
--- ============================================================
 
 -- Q1: Running cumulative points per driver (Window function: SUM OVER)
 -- SELECT driver_id, driver_name, round_number,
@@ -1152,9 +1125,7 @@ INSERT INTO user_role (role_name, can_insert, can_update, can_delete) VALUES
 -- Q7: Call the circuit lap record function
 -- SELECT fn_circuit_best_lap(1) AS bahrain_best_lap;
 
--- ============================================================
 -- VERIFICATION
--- ============================================================
 SELECT
     (SELECT COUNT(*) FROM information_schema.tables
      WHERE table_schema='motorsport' AND table_type='BASE TABLE') AS total_tables,
@@ -1162,31 +1133,25 @@ SELECT
     (SELECT COUNT(*) FROM race_result) AS total_results,
     (SELECT COUNT(*) FROM audit_log)   AS audit_entries;
 
--- ============================================================
 -- EXTENDED DATA — MotoGP & NASCAR 2023
--- ============================================================
 
--- ── New countries ─────────────────────────────────────────────
 INSERT IGNORE INTO country (country_name, country_code) VALUES
 ('Portugal',     'PRT'),
 ('South Africa', 'ZAF'),
 ('Thailand',     'THA');
 
--- ── MotoGP additional teams ───────────────────────────────────
 INSERT INTO team (team_name, country_id, base_location, founded_year, principal) VALUES
 ('Prima Pramac Ducati',  6, 'Gatteo, Italy',        2002, 'Paolo Campinoti'),
 ('Mooney VR46 Racing',   6, 'Tavullia, Italy',       2021, 'Valentino Rossi'),
 ('Red Bull KTM Factory', 14,'Mattighofen, Austria',  2017, 'Pit Beirer'),
 ('Gresini Racing',       6, 'Faenza, Italy',         2021, 'Nadia Padovani');
 
--- ── NASCAR additional teams ───────────────────────────────────
 INSERT INTO team (team_name, country_id, base_location, founded_year, principal) VALUES
 ('Spire Motorsports',        8, 'Mooresville, NC', 2018, 'Jeff Dickerson'),
 ('Richard Childress Racing', 8, 'Welcome, NC',     1969, 'Richard Childress'),
 ('Trackhouse Racing',        8, 'Concord, NC',     2021, 'Justin Marks'),
 ('Kaulig Racing',            8, 'Concord, NC',     2016, 'Matt Kaulig');
 
--- ── Championship-team links ───────────────────────────────────
 -- MotoGP 2023 (season_id = 3)
 INSERT IGNORE INTO championship_team (season_id, team_id)
 SELECT 3, team_id FROM team WHERE team_name IN (
@@ -1201,7 +1166,6 @@ SELECT 4, team_id FROM team WHERE team_name IN (
     'Spire Motorsports', 'Richard Childress Racing', 'Trackhouse Racing', 'Kaulig Racing'
 );
 
--- ── MotoGP additional drivers ─────────────────────────────────
 INSERT INTO driver (first_name, last_name, nationality_id, date_of_birth, driver_number, abbreviation) VALUES
 ('Marco',       'Bezzecchi',  6,  '1998-11-12', 72, 'BEZ'),
 ('Brad',        'Binder',    (SELECT country_id FROM country WHERE country_code='ZAF'), '1995-08-27', 33, 'BIN'),
@@ -1212,7 +1176,6 @@ INSERT INTO driver (first_name, last_name, nationality_id, date_of_birth, driver
 ('Alex',        'Rins',       4,  '1995-09-08', 42, 'RIN'),
 ('Enea',        'Bastianini', 6,  '1997-12-30', 23, 'BAS');
 
--- ── NASCAR additional drivers ─────────────────────────────────
 INSERT INTO driver (first_name, last_name, nationality_id, date_of_birth, driver_number, abbreviation) VALUES
 ('William',     'Byron',        8, '1997-11-29', 24, 'BYR'),
 ('Martin',      'Truex Jr',     8, '1980-06-29', 19, 'TRX'),
@@ -1223,7 +1186,6 @@ INSERT INTO driver (first_name, last_name, nationality_id, date_of_birth, driver
 ('Ross',        'Chastain',     8, '1992-12-04',  1, 'CHA'),
 ('Joey',        'Logano',       8, '1990-05-24', 22, 'LOG');
 
--- ── team_driver links — MotoGP 2023 (season_id=3) ────────────
 SET @ducati   = (SELECT team_id FROM team WHERE team_name='Ducati Lenovo');
 SET @pramac   = (SELECT team_id FROM team WHERE team_name='Prima Pramac Ducati');
 SET @vr46     = (SELECT team_id FROM team WHERE team_name='Mooney VR46 Racing');
@@ -1255,7 +1217,6 @@ INSERT IGNORE INTO team_driver (team_id, driver_id, season_id, role) VALUES
 (@yamaha, @quart,   3, 'Race Rider'),
 (@honda,  @marquez, 3, 'Race Rider');
 
--- ── team_driver links — NASCAR 2023 (season_id=4) ─────────────
 SET @hend   = (SELECT team_id FROM team WHERE team_name='Hendrick Motorsports');
 SET @jgr    = (SELECT team_id FROM team WHERE team_name='Joe Gibbs Racing');
 SET @penske = (SELECT team_id FROM team WHERE team_name='Team Penske');
@@ -1285,7 +1246,6 @@ INSERT IGNORE INTO team_driver (team_id, driver_id, season_id, role) VALUES
 (@rcr,    @kbusch,  4, 'Race Driver'),
 (@track,  @chast,   4, 'Race Driver');
 
--- ── MotoGP circuits ───────────────────────────────────────────
 INSERT INTO circuit (circuit_name, country_id, city, track_length_km, circuit_type, capacity) VALUES
 ('Algarve International Circuit',  (SELECT country_id FROM country WHERE country_code='PRT'), 'Portimao',    4.592, 'Permanent', 69000),
 ('Angel Nieto Circuit',            4,  'Jerez de la Frontera', 4.423, 'Permanent', 65000),
@@ -1293,7 +1253,6 @@ INSERT INTO circuit (circuit_name, country_id, city, track_length_km, circuit_ty
 ('TT Circuit Assen',               3,  'Assen',                4.542, 'Permanent', 105000),
 ('Red Bull Ring',                  14, 'Spielberg',            4.318, 'Permanent', 72000);
 
--- ── NASCAR circuits ───────────────────────────────────────────
 INSERT INTO circuit (circuit_name, country_id, city, track_length_km, circuit_type, capacity) VALUES
 ('Atlanta Motor Speedway',         8, 'Hampton',     2.736, 'Oval', 75000),
 ('Las Vegas Motor Speedway',       8, 'Las Vegas',   2.414, 'Oval', 80000),
@@ -1301,7 +1260,6 @@ INSERT INTO circuit (circuit_name, country_id, city, track_length_km, circuit_ty
 ('Talladega Superspeedway',        8, 'Talladega',   4.281, 'Oval', 143000),
 ('Phoenix Raceway',                8, 'Avondale',    1.609, 'Oval', 51000);
 
--- ── MotoGP 2023 Races ─────────────────────────────────────────
 SET @portimao = (SELECT circuit_id FROM circuit WHERE circuit_name='Algarve International Circuit');
 SET @jerez    = (SELECT circuit_id FROM circuit WHERE circuit_name='Angel Nieto Circuit');
 SET @cota     = (SELECT circuit_id FROM circuit WHERE circuit_name='Circuit of the Americas');
@@ -1324,7 +1282,6 @@ INSERT INTO race (season_id, circuit_id, race_name, race_date, round_number, tot
 (@motogp23, @assen,    'Dutch TT',               '2023-06-25', 7,  26, 118.092, 'Completed'),
 (@motogp23, @redbull,  'Austrian Grand Prix',    '2023-08-20', 11, 28, 120.904, 'Completed');
 
--- ── MotoGP race results ───────────────────────────────────────
 -- Race IDs: existing races are 1-10 (5 F1 + we added 2 Saudi results)
 -- Let's get the actual race_ids for our new MotoGP races
 SET @por_r = (SELECT race_id FROM race WHERE race_name='Portuguese Grand Prix' AND season_id=3);
@@ -1421,7 +1378,6 @@ INSERT IGNORE INTO fastest_lap (race_id, driver_id, team_id, lap_number, lap_tim
 (@ned_r, @bezz,    @vr46,   22, '1:33.618'),
 (@aut_r, @binder,  @ktm,    24, '1:30.421');
 
--- ── NASCAR 2023 Races ─────────────────────────────────────────
 SET @daytona  = (SELECT circuit_id FROM circuit WHERE circuit_name='Daytona International Speedway');
 SET @atlanta  = (SELECT circuit_id FROM circuit WHERE circuit_name='Atlanta Motor Speedway');
 SET @lasvegas = (SELECT circuit_id FROM circuit WHERE circuit_name='Las Vegas Motor Speedway');
@@ -1438,7 +1394,6 @@ INSERT INTO race (season_id, circuit_id, race_name, race_date, round_number, tot
 (@nascar23, @tala,     'GEICO 500',                 '2023-04-23',  9, 188, 805.178, 'Completed'),
 (@nascar23, @phx,      'Championship Race Phoenix', '2023-11-05', 36, 312, 502.085, 'Completed');
 
--- ── NASCAR race results ───────────────────────────────────────
 SET @day_r  = (SELECT race_id FROM race WHERE race_name='Daytona 500' AND season_id=4);
 SET @atl_r  = (SELECT race_id FROM race WHERE race_name='Ambetter Health 400' AND season_id=4);
 SET @lv_r   = (SELECT race_id FROM race WHERE race_name='Pennzoil 400' AND season_id=4);
@@ -1535,41 +1490,33 @@ INSERT IGNORE INTO fastest_lap (race_id, driver_id, team_id, lap_number, lap_tim
 (@tal_r, @chast,   @track,  170, '0:43.782'),
 (@phx_r, @blaney,  @penske, 298, '0:23.156');
 
--- ── Trigger stored procedure calls to auto-populate standings ──
 CALL sp_assign_final_rankings(3); -- MotoGP 2023
 CALL sp_assign_final_rankings(4); -- NASCAR 2023
 
--- ── Verification ──────────────────────────────────────────────
 SELECT
   (SELECT COUNT(*) FROM race WHERE season_id=3)          AS motogp_races,
   (SELECT COUNT(*) FROM race_result rr JOIN race r ON rr.race_id=r.race_id WHERE r.season_id=3) AS motogp_results,
   (SELECT COUNT(*) FROM race WHERE season_id=4)          AS nascar_races,
   (SELECT COUNT(*) FROM race_result rr JOIN race r ON rr.race_id=r.race_id WHERE r.season_id=4) AS nascar_results;
 
--- ============================================================
 -- WRC — World Rally Championship 2023
--- ============================================================
 
 
--- ── WRC Championship ──────────────────────────────────────────
 INSERT INTO championship (champ_name, category, governing_body, founded_year, official_website)
 VALUES ('FIA World Rally Championship', 'WEC', 'FIA', 1973, 'https://www.wrc.com');
 
 SET @wrc_id = LAST_INSERT_ID();
 
--- ── WRC 2023 Season ───────────────────────────────────────────
 INSERT INTO season (championship_id, season_year, start_date, end_date, total_rounds)
 VALUES (@wrc_id, 2023, '2023-01-19', '2023-11-16', 13);
 
 SET @wrc23 = LAST_INSERT_ID();
 
--- ── WRC Countries ─────────────────────────────────────────────
 INSERT IGNORE INTO country (country_name, country_code) VALUES
 ('Estonia',   'EST'), ('Croatia',  'HRV'), ('Greece',    'GRC'),
 ('Chile',     'CHL'), ('Kenya',    'KEN'), ('Belgium',   'BEL'),
 ('Indonesia', 'IDN'), ('Ecuador',  'ECU');
 
--- ── WRC Teams ─────────────────────────────────────────────────
 INSERT INTO team (team_name, country_id, base_location, founded_year, principal) VALUES
 ('Toyota Gazoo Racing WRT',       (SELECT country_id FROM country WHERE country_code='FIN'), 'Jyvaskyla, Finland', 2017, 'Jari-Matti Latvala'),
 ('Hyundai Shell Mobis WRT',       (SELECT country_id FROM country WHERE country_code='DEU'), 'Alzenau, Germany',   2014, 'Cyril Abiteboul'),
@@ -1585,7 +1532,6 @@ SET @toyota2 = (SELECT team_id FROM team WHERE team_name='Toyota Gazoo Racing WR
 INSERT IGNORE INTO championship_team (season_id, team_id) VALUES
 (@wrc23, @toyota), (@wrc23, @hyundai), (@wrc23, @msport), (@wrc23, @toyota2);
 
--- ── WRC Drivers ───────────────────────────────────────────────
 INSERT INTO driver (first_name, last_name, nationality_id, date_of_birth, driver_number, abbreviation) VALUES
 ('Kalle',     'Rovanpera',   (SELECT country_id FROM country WHERE country_code='FIN'), '2000-10-01',  69, 'ROV'),
 ('Elfyn',     'Evans',       (SELECT country_id FROM country WHERE country_code='GBR'), '1988-10-28',  33, 'EVA'),
@@ -1618,7 +1564,6 @@ INSERT IGNORE INTO team_driver (team_id, driver_id, season_id, role) VALUES
 (@msport,  @lou, @wrc23, 'Rally Driver'), (@msport,  @fou, @wrc23, 'Rally Driver'),
 (@toyota2, @mun, @wrc23, 'Rally Driver');
 
--- ── WRC Circuits (Rally stages are listed as circuits) ────────
 INSERT INTO circuit (circuit_name, country_id, city, track_length_km, circuit_type) VALUES
 ('Rally Monte Carlo',        (SELECT country_id FROM country WHERE country_code='MCO'), 'Monte Carlo',   334.97, 'Mixed'),
 ('Rally Sweden',             (SELECT country_id FROM country WHERE country_code='SWE'), 'Umea',          281.18, 'Mixed'),
@@ -1634,7 +1579,6 @@ INSERT INTO circuit (circuit_name, country_id, city, track_length_km, circuit_ty
 ('Rally Central Europe',     (SELECT country_id FROM country WHERE country_code='AUT'), 'Passau',        326.82, 'Mixed'),
 ('Rally Japan',              (SELECT country_id FROM country WHERE country_code='JPN'), 'Nagoya',        311.21, 'Mixed');
 
--- ── WRC 2023 Races ────────────────────────────────────────────
 INSERT INTO race (season_id, circuit_id, race_name, race_date, round_number, total_laps, distance_km, status) VALUES
 (@wrc23, (SELECT circuit_id FROM circuit WHERE circuit_name='Rally Monte Carlo'),      'Rally Monte Carlo 2023',    '2023-01-19', 1,  NULL, 334.97, 'Completed'),
 (@wrc23, (SELECT circuit_id FROM circuit WHERE circuit_name='Rally Sweden'),           'Rally Sweden 2023',         '2023-02-09', 2,  NULL, 281.18, 'Completed'),
@@ -1650,7 +1594,6 @@ INSERT INTO race (season_id, circuit_id, race_name, race_date, round_number, tot
 (@wrc23, (SELECT circuit_id FROM circuit WHERE circuit_name='Rally Central Europe'),   'Rally Central Europe 2023', '2023-10-26', 12, NULL, 326.82, 'Completed'),
 (@wrc23, (SELECT circuit_id FROM circuit WHERE circuit_name='Rally Japan'),            'Rally Japan 2023',          '2023-11-16', 13, NULL, 311.21, 'Completed');
 
--- ── WRC Race Results ──────────────────────────────────────────
 -- WRC points: 25,18,15,12,10,8,6,4,2,1 same as F1
 
 SET @mc  = (SELECT race_id FROM race WHERE race_name='Rally Monte Carlo 2023');
@@ -1771,7 +1714,6 @@ INSERT INTO race_result (race_id, driver_id, team_id, finishing_position, grid_p
 (@jpn, @kat, @toyota,  7,7, 6,'Finished'),(@jpn, @mun, @toyota2, 8,8, 4,'Finished'),
 (@jpn, @lou, @msport,  9,9, 2,'Finished'),(@jpn, @fou, @msport, 10,10,1,'Finished');
 
--- ── WRC Points System ─────────────────────────────────────────
 INSERT INTO points_system (championship_id, system_name, valid_from_year, bonus_points)
 VALUES (@wrc_id, 'WRC Points System 2023', 2023, 1);
 
@@ -1781,10 +1723,8 @@ INSERT INTO points_system_detail (ps_id, finishing_pos, points_awarded) VALUES
 (@wrc_ps,1,25),(@wrc_ps,2,18),(@wrc_ps,3,15),(@wrc_ps,4,12),(@wrc_ps,5,10),
 (@wrc_ps,6,8),(@wrc_ps,7,6),(@wrc_ps,8,4),(@wrc_ps,9,2),(@wrc_ps,10,1);
 
--- ── Assign WRC 2023 Rankings ──────────────────────────────────
 CALL sp_assign_final_rankings(@wrc23);
 
--- ── Verification ──────────────────────────────────────────────
 SELECT
   (SELECT COUNT(*) FROM race   WHERE season_id=@wrc23) AS wrc_races,
   (SELECT COUNT(*) FROM race_result rr JOIN race r ON rr.race_id=r.race_id WHERE r.season_id=@wrc23) AS wrc_results,
